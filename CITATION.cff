@@ -1,0 +1,51 @@
+cff-version: 1.2.0
+title: "Gemma4Defense-2B: A Compact CTI Specialist Fine-Tuned from Gemma-4-E2B-it"
+type: software
+authors:
+  - family-names: Mulia
+    given-names: Samuel
+    alias: athena129
+date-released: 2026-05-07
+url: "https://github.com/GPT-64590/Gemma4Defense-2B"
+repository-code: "https://github.com/GPT-64590/Gemma4Defense-2B"
+repository-artifact: "https://huggingface.co/athena129/Gemma4Defense-2B"
+license: MIT
+keywords:
+  - cybersecurity
+  - cti
+  - cwe-classification
+  - fine-tuning
+  - lora
+  - gemma
+abstract: >
+  Gemma4Defense-2B is a 2.3B-parameter language model fine-tuned from
+  Gemma-4-E2B-it for CWE classification and cyber threat intelligence
+  multiple-choice tasks. Under Cisco's Foundation-Sec evaluation protocol
+  (arXiv:2504.21039), it retains 98.6% of Foundation-Sec-Instruct-8B's
+  CTI-RCM accuracy at one-quarter the parameter count, while exceeding its
+  CTI-MCQ by +10.5 points (5-trial mean). Companion model CyberSecQwen-4B
+  trained with the same recipe on Qwen3-4B-Instruct-2507 converges to
+  within 0.9 points on CTI-RCM, demonstrating recipe portability across
+  model families.
+references:
+  - type: article
+    title: "Foundation-Sec-8B: A Cybersecurity-Specialized Language Model"
+    authors:
+      - name: Cisco Foundation AI
+    year: 2025
+    journal: arXiv preprint
+    notes: arXiv:2504.21039
+    url: https://arxiv.org/abs/2504.21039
+  - type: misc
+    title: "CTI-Bench: A Benchmark Suite for Cybersecurity LLMs"
+    authors:
+      - family-names: Alam
+        given-names: Md Tanvirul
+      - family-names: Bhusal
+        given-names: Dipkamal
+      - family-names: Park
+        given-names: Youngja
+      - family-names: Rastogi
+        given-names: Nidhi
+    year: 2024
+    url: https://github.com/xashru/cti-bench

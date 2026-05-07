@@ -1,0 +1,11 @@
+{
+  "_note": "Baseline numbers for Gemma-4-E2B-it raw at our protocol from STATE.md scoreboard. Single-trial measurement at temperature=0.3. To re-measure: spin up vLLM with google/gemma-4-E2B-it (no SFT) and run eval.sh.",
+  "model": "google/gemma-4-E2B-it",
+  "protocol": "ift (chat) — zero-shot, dataset Prompt as user message",
+  "temperature": 0.3,
+  "trials": 1,
+  "subsets": {
+    "cti-rcm": {"strict_acc": 0.580},
+    "cti-mcq": {"strict_acc": 0.578}
+  }
+}

@@ -1,0 +1,38 @@
+MIT License
+
+Copyright (c) 2026 Samuel Mulia
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+----------------------------------------------------------------------
+
+NOTE ON MODEL WEIGHTS
+
+This MIT license covers the source code, scripts, configurations, and
+documentation in this repository. The fine-tuned model weights distributed
+on Hugging Face (https://huggingface.co/athena129/Gemma4Defense-2B) are a
+derivative of google/gemma-4-E2B-it and are governed by the Gemma Terms of
+Use:
+
+    https://ai.google.dev/gemma/terms
+
+Users must comply with the Gemma Terms of Use when using or redistributing
+the model weights. This MIT license does NOT extend the terms of the model
+weights — the weights remain under the Gemma license regardless of how this
+repository is used.
