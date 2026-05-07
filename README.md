@@ -90,6 +90,34 @@ The released checkpoint was trained on AMD MI300X via the AMD Developer Cloud. T
 
 ---
 
+## AMD MI300X — what we used and what we learned
+
+The released Gemma4Defense-2B checkpoint was trained on a single AMD Instinct MI300X 192 GB instance via the AMD Developer Cloud (`atl1` region), using the official `vllm/vllm-openai-rocm:latest` Docker image with ROCm 7 + PyTorch 2.6 + Hugging Face transformers + PEFT + TRL.
+
+### What works cleanly on Gemma-4 + AMD MI300X
+
+- **PyTorch `sdpa` attention.** Stable, no special build steps needed — ships in the official vLLM ROCm image.
+- **bfloat16 throughout.** Both training and inference. No precision-mode papercuts.
+- **vLLM ROCm serving.** `--attention-backend TRITON_ATTN` is the recommended inference backend on MI300X for this architecture; we used it for evaluation runs.
+- **AITER kernels enabled** (`VLLM_ROCM_USE_AITER=1`, `TORCH_BLAS_PREFER_HIPBLASLT=1`, `HIP_FORCE_DEV_KERNARG=1`) for matmul throughput.
+- **Single-instance pipeline.** No multi-node, no special interconnect — the full SFT-merge-eval pipeline runs on one MI300X.
+
+### What does NOT work: FlashAttention-2 on Gemma-4
+
+We attempted to enable FlashAttention-2 via the Composable-Kernels backend on AMD `gfx942` and it fails on Gemma-4 specifically. The reason is hardware: Gemma-4 uses **dual head_dim per layer** (256 on sliding-attention layers, **512** on global-attention layers at indices `[4, 9, 14, 19, 24, 29, 34]`). FA2-CK on gfx942 is bounded at head_dim ≤ 256 by the LDS (shared-memory) budget — 64 KB on MI300X versus 256 KB on H100. The model loads with `attn_implementation="flash_attention_2"` but crashes at the first global layer's forward pass.
+
+This was confirmed by Tri Dao (FA2 author) in [flash-attention#2427](https://github.com/Dao-AILab/flash-attention/issues/2427) — there is no current ROCm timeline for hdim>256 in Composable Kernels. **For Gemma-4 on MI300X, sdpa is the only working attention path.** Per-layer hybrid workarounds exist (FA2 on sliding layers, sdpa on global) but have a known attention-mask-shape bug at the time of this work.
+
+The companion CyberSecQwen-4B model uses FA2 because Qwen3-4B's head_dim=128 fits within the LDS budget; that path runs ~1.6× faster per training step than the Gemma sdpa path on the same hardware.
+
+### Multimodal-to-text-only weight extraction
+
+Gemma-4 ships as a multimodal base with vision and audio towers. Standard `peft.merge_and_unload()` produces a checkpoint that includes `audio_tower` and `vision_tower` parameters — usable but bloated for text-only inference and confusing for downstream tooling. We extract the text-only language-model weights post-merge and re-publish a clean `Gemma4ForCausalLM` (model_type `gemma4_text`) that drops the multimodal towers but preserves the language model exactly. The released [HF checkpoint](https://huggingface.co/athena129/Gemma4Defense-2B) is the text-only variant.
+
+### Hardware portability
+
+The training recipe in `train.sh` is hardware-agnostic. To run on NVIDIA A100 / H100, drop the AMD-specific environment variables (they're no-ops there) and use a regular Python venv instead of the vLLM ROCm Docker image. NVIDIA users will need 24 GB+ VRAM for training and 12 GB+ for inference, same as MI300X minimums.
+
 ## Repository structure
 
 ```
