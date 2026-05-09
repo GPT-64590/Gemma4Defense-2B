@@ -1,6 +1,6 @@
 # Gemma4Defense-2B
 
-[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Gemma4Defense--2B-yellow)](https://huggingface.co/athena129/Gemma4Defense-2B)
+[![Model Card](https://img.shields.io/badge/Model%20Card-Gemma4Defense--2B-yellow)](https://huggingface.co/athena129/Gemma4Defense-2B)
 [![Companion](https://img.shields.io/badge/Companion-CyberSecQwen--4B-blue)](https://github.com/GPT-64590/CyberSecQwen-4B)
 [![License: MIT (code)](https://img.shields.io/badge/license-MIT%20%28code%29-green.svg)](LICENSE)
 [![Model License: Gemma](https://img.shields.io/badge/model-Gemma%20Terms-orange.svg)](https://ai.google.dev/gemma/terms)
@@ -98,10 +98,10 @@ bash eval.sh
 
 **System requirements** for full reproduction:
 - 1× GPU with ≥ 24 GB VRAM (training) or ≥ 12 GB VRAM (inference only)
-- Python 3.11+, PyTorch 2.6+, CUDA / ROCm
+- Python 3.11+, PyTorch 2.6+, ROCm 7 (or an equivalent modern PyTorch GPU stack)
 - ~50 GB disk for HF cache and intermediate artifacts
 
-The released checkpoint was trained on AMD MI300X via the AMD Developer Cloud. Training is hardware-agnostic; the recipe runs on NVIDIA A100/H100 or AMD MI300X equivalently. Note: FlashAttention-2 is **not** enabled for this model because Gemma-4 uses head_dim=512 on global-attention layers, which exceeds the AMD gfx942 LDS budget; we use PyTorch `sdpa` instead. The companion CyberSecQwen-4B model (Qwen3 head_dim=128) does enable FA2 and runs ~1.6× faster per training step.
+The released checkpoint was trained on AMD MI300X via the AMD Developer Cloud. Training is hardware-agnostic and runs on any modern data-center GPU with ≥ 24 GB VRAM. Note: FlashAttention-2 is **not** enabled for this model because Gemma-4 uses head_dim=512 on global-attention layers, which exceeds the AMD gfx942 LDS budget; we use PyTorch `sdpa` instead. The companion CyberSecQwen-4B model (Qwen3 head_dim=128) does enable FA2 and runs ~1.6× faster per training step.
 
 ---
 
@@ -119,7 +119,7 @@ The released Gemma4Defense-2B checkpoint was trained on a single AMD Instinct MI
 
 ### What does NOT work: FlashAttention-2 on Gemma-4
 
-We attempted to enable FlashAttention-2 via the Composable-Kernels backend on AMD `gfx942` and it fails on Gemma-4 specifically. The reason is hardware: Gemma-4 uses **dual head_dim per layer** (256 on sliding-attention layers, **512** on global-attention layers at indices `[4, 9, 14, 19, 24, 29, 34]`). FA2-CK on gfx942 is bounded at head_dim ≤ 256 by the LDS (shared-memory) budget — 64 KB on MI300X versus 256 KB on H100. The model loads with `attn_implementation="flash_attention_2"` but crashes at the first global layer's forward pass.
+We attempted to enable FlashAttention-2 via the Composable-Kernels backend on AMD `gfx942` and it fails on Gemma-4 specifically. The reason is hardware: Gemma-4 uses **dual head_dim per layer** (256 on sliding-attention layers, **512** on global-attention layers at indices `[4, 9, 14, 19, 24, 29, 34]`). FA2-CK on gfx942 is bounded at head_dim ≤ 256 by the LDS (shared-memory) budget on MI300X. The model loads with `attn_implementation="flash_attention_2"` but crashes at the first global layer's forward pass.
 
 This was confirmed by Tri Dao (FA2 author) in [flash-attention#2427](https://github.com/Dao-AILab/flash-attention/issues/2427) — there is no current ROCm timeline for hdim>256 in Composable Kernels. **For Gemma-4 on MI300X, sdpa is the only working attention path.** Per-layer hybrid workarounds exist (FA2 on sliding layers, sdpa on global) but have a known attention-mask-shape bug at the time of this work.
 
@@ -131,7 +131,7 @@ Gemma-4 ships as a multimodal base with vision and audio towers. Standard `peft.
 
 ### Hardware portability
 
-The training recipe in `train.sh` is hardware-agnostic. To run on NVIDIA A100 / H100, drop the AMD-specific environment variables (they're no-ops there) and use a regular Python venv instead of the vLLM ROCm Docker image. NVIDIA users will need 24 GB+ VRAM for training and 12 GB+ for inference, same as MI300X minimums.
+The training recipe in `train.sh` is hardware-agnostic. To run on a non-AMD GPU stack, drop the AMD-specific environment variables (they're no-ops elsewhere) and use a regular Python venv instead of the vLLM ROCm Docker image. The 24 GB+ VRAM training minimum and 12 GB+ inference minimum apply equally on any vendor's hardware.
 
 ## Repository structure
 
