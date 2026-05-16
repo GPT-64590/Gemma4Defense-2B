@@ -1,7 +1,6 @@
 # Gemma4Defense-2B
 
 [![Model Card](https://img.shields.io/badge/Model%20Card-Gemma4Defense--2B-yellow)](https://huggingface.co/athena129/Gemma4Defense-2B)
-[![Companion](https://img.shields.io/badge/Companion-CyberSecQwen--4B-blue)](https://github.com/GPT-64590/CyberSecQwen-4B)
 [![License: MIT (code)](https://img.shields.io/badge/license-MIT%20%28code%29-green.svg)](LICENSE)
 [![Model License: Gemma](https://img.shields.io/badge/model-Gemma%20Terms-orange.svg)](https://ai.google.dev/gemma/terms)
 
@@ -22,7 +21,6 @@ This repository contains everything needed to reproduce the model: training corp
 - [Limitations and intended use](#limitations-and-intended-use)
 - [Citation](#citation)
 - [License](#license)
-- [Companion model](#companion-model)
 
 ---
 
@@ -35,7 +33,7 @@ This repository contains everything needed to reproduce the model: training corp
 | CTI-MCQ (2,500 items) | **0.6042 ± 0.0090** | 0.4996 | **+10.5 pp** |
 | CTI-RCM (1,000 items) | **0.6754 ± 0.0035** | 0.6850 | -1.0 pp (within ~3σ) |
 
-A companion model trained with the **same recipe** on Qwen3-4B-Instruct-2507 — [CyberSecQwen-4B](https://github.com/GPT-64590/CyberSecQwen-4B) — converges to within 0.9 points on CTI-RCM, demonstrating recipe portability across model families.
+The identical recipe applied to a separate 4B instruction-tuned base in a different model family converges to within 0.9 points on CTI-RCM under the same protocol — a built-in robustness check that the result is recipe-driven, not substrate-specific. See [`docs/RECIPE_PORTABILITY.md`](docs/RECIPE_PORTABILITY.md) for the full controlled-experiment write-up.
 
 Full evaluation (more comparators, including independent reproduction of CyberPal-2.0-20B at our protocol): see [`docs/RESEARCH_NOTES.md`](docs/RESEARCH_NOTES.md).
 
@@ -101,7 +99,7 @@ bash eval.sh
 - Python 3.11+, PyTorch 2.6+, ROCm 7 (or an equivalent modern PyTorch GPU stack)
 - ~50 GB disk for HF cache and intermediate artifacts
 
-The released checkpoint was trained on AMD MI300X via the AMD Developer Cloud. Training is hardware-agnostic and runs on any modern data-center GPU with ≥ 24 GB VRAM. Note: FlashAttention-2 is **not** enabled for this model because Gemma-4 uses head_dim=512 on global-attention layers, which exceeds the AMD gfx942 LDS budget; we use PyTorch `sdpa` instead. The companion CyberSecQwen-4B model (Qwen3 head_dim=128) does enable FA2 and runs ~1.6× faster per training step.
+The released checkpoint was trained on AMD MI300X via the AMD Developer Cloud. The recipe is portable to any modern data-center GPU stack with bf16 support and ≥ 24 GB VRAM; the AMD ROCm specifics in `train.sh` drop in cleanly when targeting other vendor stacks. Note: FlashAttention-2 is **not** enabled for this model because Gemma-4 uses head_dim=512 on global-attention layers, which exceeds the AMD gfx942 LDS budget; we use PyTorch `sdpa` instead.
 
 ---
 
@@ -123,7 +121,7 @@ We attempted to enable FlashAttention-2 via the Composable-Kernels backend on AM
 
 This was confirmed by Tri Dao (FA2 author) in [flash-attention#2427](https://github.com/Dao-AILab/flash-attention/issues/2427) — there is no current ROCm timeline for hdim>256 in Composable Kernels. **For Gemma-4 on MI300X, sdpa is the only working attention path.** Per-layer hybrid workarounds exist (FA2 on sliding layers, sdpa on global) but have a known attention-mask-shape bug at the time of this work.
 
-The companion CyberSecQwen-4B model uses FA2 because Qwen3-4B's head_dim=128 fits within the LDS budget; that path runs ~1.6× faster per training step than the Gemma sdpa path on the same hardware.
+For reference: smaller-head-dim architectures (e.g., head_dim=128) do fit within the LDS budget and run FA2 cleanly on the same MI300X hardware, at roughly 1.6× the per-step throughput of the Gemma sdpa path.
 
 ### Multimodal-to-text-only weight extraction
 
@@ -180,7 +178,7 @@ This model uses **direct supervised fine-tuning (SFT)** of an instruction-tuned 
 2. **Instruction-tuned base, not pre-trained base.** Direct SFT on the IT checkpoint preserves existing format priors (terse-answer multiple-choice convention) better than SFT on the pre-trained base. Comparable runs we conducted on `Gemma-4-E2B` (pretrained base) showed substantial CTI-MCQ format-binding decay (-39 pp in the worst case) at the same corpus scale. See [`docs/RESEARCH_NOTES.md`](docs/RESEARCH_NOTES.md).
 3. **Direct SFT, not knowledge distillation.** We evaluated knowledge-distillation variants from a 20B teacher model (CyberPal-2.0-20B) earlier in the project. At our corpus scale (~12K supervised records) direct SFT outperformed distillation on the headline benchmarks. The released model is direct SFT only.
 4. **Multi-trial benchmarking.** All headline numbers are means of 5 independent trials with random sampling seeds at temperature 0.3; standard deviations are reported alongside.
-5. **Cross-substrate validation.** The identical training corpus and hyperparameters were applied independently to Qwen3-4B-Instruct-2507 ([CyberSecQwen-4B](https://github.com/GPT-64590/CyberSecQwen-4B)). Both models converge within 0.9 points on CTI-RCM — built-in robustness check that the result is recipe-driven, not substrate-specific.
+5. **Cross-substrate validation.** The identical training corpus and hyperparameters were applied independently to a separate 4B instruction-tuned base in a different model family; both runs converge within 0.9 points on CTI-RCM under the same protocol — built-in robustness check that the result is recipe-driven, not substrate-specific. See [`docs/RECIPE_PORTABILITY.md`](docs/RECIPE_PORTABILITY.md) for the controlled-experiment write-up.
 
 ---
 
@@ -218,9 +216,3 @@ The evaluation protocol is from [Foundation-Sec-8B (arXiv:2504.21039)](https://a
 - **The fine-tuned model weights** (hosted on Hugging Face): Gemma Terms of Use — see https://ai.google.dev/gemma/terms
 
 The model is a derivative of `google/gemma-4-E2B-it` and inherits Google's Gemma license. The training data (decontaminated 2021 CVE→CWE mappings) is derived from public MITRE/NVD records; the synthetic CVE/CTI Q&A in `data/train/cve_cti_synth.jsonl` is original and released under the same MIT license as the code.
-
----
-
-## Companion model
-
-[CyberSecQwen-4B](https://github.com/GPT-64590/CyberSecQwen-4B) — sister release on Qwen3-4B-Instruct-2507, Apache 2.0, validated end-to-end on AMD MI300X. Same training recipe; converges to RCM 0.6664 ± 0.0023 / MCQ 0.5868 ± 0.0029. Use that model when the Gemma terms are not a fit for your deployment.

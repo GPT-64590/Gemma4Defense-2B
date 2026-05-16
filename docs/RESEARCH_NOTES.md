@@ -24,7 +24,7 @@ The eval harness is in `src/cti_bench_eval.py`; the inputs are CTI-Bench's TSV f
 
 An earlier internal version (informally referred to as "v3") trained on undeduplicated public CTI corpora produced inflated CTI-RCM scores. Checking sample-level overlap revealed approximately **72% of training items appeared verbatim or near-verbatim in CTI-Bench's evaluation TSV**.
 
-The released v3.4 (Gemma4Defense-2B) addresses this by:
+The released model (Gemma4Defense-2B) addresses this by:
 1. Restricting the CWE classification training data to **MITRE/NVD records dated 2021** (the cti-rcm-2021 cohort), filtered against CTI-Bench's full RCM evaluation split with overlap items explicitly removed
 2. Using the resulting `data/train/rcm_2021_train.jsonl` (6,776 records) as the primary specialization signal
 3. Augmenting with synthetic defensive-analyst Q&A grounded in CVE descriptions but distinct from CTI-Bench items: `data/train/cve_cti_synth.jsonl` (~5,776 records)
@@ -60,16 +60,16 @@ The released model is direct SFT only.
 
 ## Cumulative epoch progression (the actual training history)
 
-The released v3.4 weights were produced through cumulative LoRA adapter resumption rather than a single 10-epoch run. The progression:
+The released weights were produced through cumulative LoRA adapter resumption rather than a single 10-epoch run. The progression:
 
 | Stage | Corpus | Epochs added | Cumulative epochs | CTI-RCM | CTI-MCQ |
 |---|---|---:|---:|---:|---:|
-| v3.1 | rcm_2021 only | 5 | 5 | 0.637 | 0.616 |
-| v3.2 | + cve_cti_synth | +2 | 7 | 0.652 | 0.616 |
-| v3.3 | combined | +3 | 10 (effective) | 0.665 | 0.612 |
-| v3.4 | combined | +5 | 15 (released) | 0.6754 | 0.6042 |
+| 1 | rcm_2021 only | 5 | 5 | 0.637 | 0.616 |
+| 2 | + cve_cti_synth | +2 | 7 | 0.652 | 0.616 |
+| 3 | combined | +3 | 10 (effective) | 0.665 | 0.612 |
+| 4 (released) | combined | +5 | 15 | 0.6754 | 0.6042 |
 
-(Single-trial intermediate numbers above; multi-trial available only for v3.4 in `results/multi_trial_5x.json`.)
+(Single-trial intermediate numbers above; multi-trial averaging was applied only at the released stage — see `results/multi_trial_5x.json`.)
 
 The single-run recipe in `train.sh` (10 epochs on the combined corpus) is a *reproducible equivalent* but does not exactly recreate the cumulative training history. Cross-validation against the Qwen3 substrate (where we did run a single-shot 10-epoch recipe) shows the two paths converge to within multi-trial measurement noise on CTI-RCM. See [`docs/RECIPE_PORTABILITY.md`](RECIPE_PORTABILITY.md).
 
@@ -78,7 +78,7 @@ The single-run recipe in `train.sh` (10 epochs on the combined corpus) is a *rep
 The headline numbers are 5-trial means, not single-trial measurements. Empirically, our recipe + corpus + sampling regime produces tight standard deviations (~0.005 RCM, ~0.009 MCQ at 5 trials), meaning headline claims are stable to within ~0.5 pp:
 
 ```
-v3.4 (Gemma4Defense-2B):
+Gemma4Defense-2B:
   CTI-RCM: 0.6754 ± 0.0035  (5 trials)
   CTI-MCQ: 0.6042 ± 0.0090  (5 trials)
 ```
@@ -95,7 +95,6 @@ All numbers below are from our own measurement under the protocol described abov
 | **Foundation-Sec-Instruct-8B** | 8B | **0.685** | **0.500** | 0-shot, our TARGET |
 | CyberPal-2.0-20B | 20B | 0.728* | 0.738* | independently verified at our protocol; their paper claims 0.874 / 0.757 with a different prompt template |
 | **Gemma4Defense-2B** (this release) | 2.3B | **0.6754 ± 0.0035** | **0.6042 ± 0.0090** | 5-trial mean ± std |
-| CyberSecQwen-4B (companion) | 4B | 0.6664 ± 0.0023 | 0.5868 ± 0.0029 | same recipe, different substrate |
 | Gemma-4-E4B-it (raw) | 5.1B effective | 0.618 | 0.666 | 0-shot |
 | Gemma-4-E2B-it (raw) | 2.3B | 0.580 | 0.578 | 0-shot, our base |
 | Gemma-4-E4B-base (raw) | 5.1B effective | 0.588 | 0.666 | 5-shot |
@@ -106,9 +105,9 @@ All numbers below are from our own measurement under the protocol described abov
 ## What we tried that didn't work
 
 For honesty, several recipe variants were trained and rejected:
-- **Pretrained base + RCM-only single-task SFT** (v4.1 region): CTI-MCQ collapsed to 0.18
-- **Pretrained base + multi-task CoT distillation** (v5.0 region): partial recovery to 0.51, still below released model
-- **Multi-task corpus heavy on CoT, lighter on instruct format** (v6.0 region on Qwen): same MCQ-collapse pattern as v4.1
-- **Doubling the rehearsal proportion in the multi-task mix** (v6.1 region on Qwen): MCQ partially recovered but RCM ceiling held at ~0.61
+- **Pretrained base + RCM-only single-task SFT**: CTI-MCQ collapsed to 0.18
+- **Pretrained base + multi-task CoT distillation**: partial recovery to 0.51, still below released model
+- **Multi-task corpus heavy on CoT, lighter on instruct format** (cross-validated on a Qwen3 substrate): same MCQ-collapse pattern
+- **Doubling the rehearsal proportion in the multi-task mix** (also cross-validated on a Qwen3 substrate): MCQ partially recovered but RCM ceiling held at ~0.61
 
-The single, robust finding across all these variants: **at our corpus scale, the IT base + direct SFT recipe shipped here is the strongest configuration we found.** The companion Qwen3 substrate experiment (CyberSecQwen-4B) confirmed this pattern is recipe-driven, not Gemma-specific.
+The single, robust finding across all these variants: **at our corpus scale, the IT base + direct SFT recipe shipped here is the strongest configuration we found.** The Qwen3-substrate cross-validation experiment (documented in `docs/RECIPE_PORTABILITY.md`) confirmed this pattern is recipe-driven, not Gemma-specific.
