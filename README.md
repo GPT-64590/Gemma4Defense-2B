@@ -2,7 +2,7 @@
 
 [![Model Card](https://img.shields.io/badge/Model%20Card-Gemma4Defense--2B-yellow)](https://huggingface.co/athena129/Gemma4Defense-2B)
 [![License: MIT (code)](https://img.shields.io/badge/license-MIT%20%28code%29-green.svg)](LICENSE)
-[![Model License: Gemma](https://img.shields.io/badge/model-Gemma%20Terms-orange.svg)](https://ai.google.dev/gemma/terms)
+[![Model License: Apache 2.0](https://img.shields.io/badge/model-Apache%202.0-green.svg)](https://ai.google.dev/gemma/docs/gemma_4_license)
 
 A 2.3B-parameter cybersecurity language model fine-tuned from [Gemma-4-E2B-it](https://huggingface.co/google/gemma-4-E2B-it) for CWE classification (CTI-RCM) and cyber threat intelligence multiple-choice (CTI-MCQ). Under [Cisco's Foundation-Sec evaluation protocol (arXiv:2504.21039)](https://arxiv.org/abs/2504.21039), Gemma4Defense-2B retains 98.6% of Foundation-Sec-Instruct-8B's CTI-RCM accuracy at one-quarter the parameter count, and exceeds its CTI-MCQ by +10.5 points.
 
@@ -213,6 +213,6 @@ The evaluation protocol is from [Foundation-Sec-8B (arXiv:2504.21039)](https://a
 ## License
 
 - **Code in this repository:** MIT — see [`LICENSE`](LICENSE)
-- **The fine-tuned model weights** (hosted on Hugging Face): Gemma Terms of Use — see https://ai.google.dev/gemma/terms
+- **The fine-tuned model weights** (hosted on Hugging Face): Apache 2.0 — see https://ai.google.dev/gemma/docs/gemma_4_license
 
-The model is a derivative of `google/gemma-4-E2B-it` and inherits Google's Gemma license. The training data (decontaminated 2021 CVE→CWE mappings) is derived from public MITRE/NVD records; the synthetic CVE/CTI Q&A in `data/train/cve_cti_synth.jsonl` is original and released under the same MIT license as the code.
+The model is a derivative of `google/gemma-4-E2B-it`, which is released under Apache 2.0, and inherits that license. The training data (decontaminated 2021 CVE→CWE mappings) is derived from public MITRE/NVD records; the synthetic CVE/CTI Q&A in `data/train/cve_cti_synth.jsonl` is original and released under the same MIT license as the code.
